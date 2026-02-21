@@ -1,0 +1,46 @@
+name: Instagram Automation
+
+on:
+  schedule:
+    # Runs every day at 08:00 UTC
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run automation
+        env:
+          SOURCE_USERNAME: ${{ secrets.SOURCE_USERNAME }}
+          SOURCE_PASSWORD: ${{ secrets.SOURCE_PASSWORD }}
+          TARGET_USERNAME: ${{ secrets.TARGET_USERNAME }}
+          TARGET_PASSWORD: ${{ secrets.TARGET_PASSWORD }}
+          ACCOUNTS_TO_SCRAPE: ${{ secrets.ACCOUNTS_TO_SCRAPE }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MAX_POSTS_PER_ACCOUNT: ${{ vars.MAX_POSTS_PER_ACCOUNT || '5' }}
+          HISTORY_FILE: history.xlsx
+        run: python main.py
+
+      - name: Upload history file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-history
+          path: history.xlsx
+          if-no-files-found: ignore
